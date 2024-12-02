@@ -17,7 +17,7 @@ Create historical database:
 - Right-click on its public schema and choose Query Tool
 
 
-Enter \i 'path-to-create_historical.sql'
+- Enter \i 'path-to-create_historical.sql'
 
 Insert sample data into historical database:
 
