@@ -12,7 +12,9 @@ Insert sample data into main database:
 
 Create historical database:
 
-- Create database 'soundgooddb_historical' in GUI or by entering CREATE DATABASE soundgooddb_historical;
+- Create database 'soundgooddb_historical' in GUI or by entering CREATE DATABASE soundgooddb_historical; 
+The script assumes your default postgres account has the password 'postgres'.
+
 
 - Right-click on its public schema and choose PSQL Tool
 
