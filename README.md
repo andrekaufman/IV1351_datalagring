@@ -31,6 +31,7 @@ OPTIONS (user 'postgres', password 'postgres');
 - Import relevant foreign schemas from main database
 IMPORT FOREIGN SCHEMA public LIMIT TO (lesson, individuallesson, grouplesson, ensemblelesson, student_lesson, student, pricingscheme) FROM SERVER soundgooddb_server INTO public;
 
+Insert sample data into historical database:
 
 - Enter PSQL tool and enter \i 'path-to-insert_sampledata_historical.sql'
 
