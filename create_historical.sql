@@ -1,5 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS postgres_fdw;
 
+SET CLIENT_ENCODING = 'UTF8';
+
 CREATE SERVER soundgooddb_server
 FOREIGN DATA WRAPPER postgres_fdw
 OPTIONS (dbname 'soundgooddb', host 'localhost');
