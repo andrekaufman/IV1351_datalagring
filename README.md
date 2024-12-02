@@ -1,6 +1,6 @@
 Creation of main database:
 
-- Create database 'soundgooddb_historical' in GUI or by entering CREATE DATABASE soundgooddb;
+- Create database 'soundgooddb' in GUI or by entering CREATE DATABASE soundgooddb;
 - Right-click on its public schema and choose PSQL Tool
 - Enter \i 'path-to-create_database.sql'
 
