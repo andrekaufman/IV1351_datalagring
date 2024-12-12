@@ -30,7 +30,7 @@ public class RentalController {
      * @throws SQLException If the rental quota is exceeded or the instrument is already rented.
      */
     public void rentInstrument(int studentId, int instrumentId) throws SQLException {
-        // Lock student rentals to validate rental quota
+        // Validate rental quota
         ResultSet studentRentals = rentalDAO.ReadStudentRentals(studentId);
         int rentalCount = 0;
         while (studentRentals.next()) {
@@ -40,7 +40,7 @@ public class RentalController {
             throw new SQLException("Rental limit exceeded. A student cannot rent more than 2 instruments.");
         }
 
-        // Lock instrument rentals to validate availability
+        // Validate availability
         ResultSet instrumentRental = rentalDAO.ReadInstrumentRental(instrumentId);
         if (instrumentRental.next()) {
             throw new SQLException("Instrument is already rented to another student.");

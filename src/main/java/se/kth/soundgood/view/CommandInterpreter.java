@@ -23,9 +23,9 @@ public class CommandInterpreter {
                 switch (command) {
                     case "help":
                         System.out.println("Commands:");
-                        System.out.println("  list <type>: List all available instruments of a type.");
-                        System.out.println("  rent <student-id> <instrument-id>: Rent an instrument.");
-                        System.out.println("  terminate <student-id> <instrument-id>: Terminate a rental.");
+                        System.out.println("  list [type]: List all available instruments of a type.");
+                        System.out.println("  rent [student-id] [instrument-id]: Rent an instrument.");
+                        System.out.println("  terminate [student-id] [instrument-id]: Terminate a rental.");
                         System.out.println("  quit: Exit the application.");
                         break;
                     case "list":
