@@ -17,7 +17,7 @@ public class RentalDAO {
      * @return A ResultSet containing the active rentals for the student
      * @throws SQLException If a database access error occurs
      */
-    public ResultSet lockActiveRentalsByStudent(int studentId) throws SQLException {
+    public ResultSet ReadStudentRentals(int studentId) throws SQLException {
         String query = "SELECT * FROM instrument_rental WHERE student_id = ? AND end_date IS NULL FOR UPDATE";
         PreparedStatement stmt = connection.prepareStatement(query);
         stmt.setInt(1, studentId);
@@ -31,7 +31,7 @@ public class RentalDAO {
      * @return A ResultSet containing the active rental for the instrument (if it exists)
      * @throws SQLException If a database access error occurs
      */
-    public ResultSet lockActiveRentalByInstrument(int instrumentId) throws SQLException {
+    public ResultSet ReadInstrumentRental(int instrumentId) throws SQLException {
         String query = "SELECT * FROM instrument_rental WHERE instrument_id = ? AND end_date IS NULL FOR UPDATE";
         PreparedStatement stmt = connection.prepareStatement(query);
         stmt.setInt(1, instrumentId);
@@ -45,7 +45,7 @@ public class RentalDAO {
      * @param instrumentId Instrument ID of specified instrument
      * @throws SQLException If a database access error occurs
      */
-    public void insertRental(int studentId, int instrumentId) throws SQLException {
+    public void CreateRental(int studentId, int instrumentId) throws SQLException {
         String query = "INSERT INTO instrument_rental (student_id, instrument_id, start_date) VALUES (?, ?, CURRENT_DATE)";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, studentId);
@@ -65,7 +65,7 @@ public class RentalDAO {
      * @param instrumentId ID of the instrument being returned.
      * @throws SQLException If no active rental is found or a database access error occurs.
      */
-    public void endRental(int studentId, int instrumentId) throws SQLException {
+    public void UpdateRentalEnd(int studentId, int instrumentId) throws SQLException {
         String query = "UPDATE instrument_rental SET end_date = CURRENT_DATE WHERE student_id = ? AND instrument_id = ? AND end_date IS NULL";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, studentId);

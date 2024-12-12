@@ -18,7 +18,7 @@ public class RentalController {
     }
 
     public List<Instrument> listAvailableInstruments(String type) throws SQLException {
-        return instrumentDAO.getAvailableInstruments(type);
+        return instrumentDAO.ReadAvailableInstruments(type);
     }
 
     /**
@@ -31,7 +31,7 @@ public class RentalController {
      */
     public void rentInstrument(int studentId, int instrumentId) throws SQLException {
         // Lock student rentals to validate rental quota
-        ResultSet studentRentals = rentalDAO.lockActiveRentalsByStudent(studentId);
+        ResultSet studentRentals = rentalDAO.ReadStudentRentals(studentId);
         int rentalCount = 0;
         while (studentRentals.next()) {
             rentalCount++;
@@ -41,13 +41,13 @@ public class RentalController {
         }
 
         // Lock instrument rentals to validate availability
-        ResultSet instrumentRental = rentalDAO.lockActiveRentalByInstrument(instrumentId);
+        ResultSet instrumentRental = rentalDAO.ReadInstrumentRental(instrumentId);
         if (instrumentRental.next()) {
             throw new SQLException("Instrument is already rented to another student.");
         }
 
         // Insert the rental record and update instrument availability
-        rentalDAO.insertRental(studentId, instrumentId);
+        rentalDAO.CreateRental(studentId, instrumentId);
         instrumentDAO.updateInstrumentAvailability(instrumentId, false);
     }
 
@@ -59,7 +59,7 @@ public class RentalController {
      * @throws SQLException If no active rental is found or a database access error occurs.
      */
     public void terminateRental(int studentId, int instrumentId) throws SQLException {
-        rentalDAO.endRental(studentId, instrumentId);
+        rentalDAO.UpdateRentalEnd(studentId, instrumentId);
         instrumentDAO.updateInstrumentAvailability(instrumentId, true);
     }
 }

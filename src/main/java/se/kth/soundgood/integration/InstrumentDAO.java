@@ -16,12 +16,12 @@ public class InstrumentDAO {
     }
 
     /**
-     * Retrieves a list of all available instruments of a specified type.
+     * Retrieves a list of all available instruments of a specified type. 
      * @param type Type of instrument
      * @return A list of available instruments.
      * @throws SQLException If a database access error occurs.
      */
-    public List<Instrument> getAvailableInstruments(String type) throws SQLException {
+    public List<Instrument> ReadAvailableInstruments(String type) throws SQLException {
         String query = "SELECT instrument_id, instrument_brand, rental_price " +
                        "FROM instrument WHERE instrument_type ILIKE ? AND is_available = true";
         PreparedStatement stmt = connection.prepareStatement(query);
