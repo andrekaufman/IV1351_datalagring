@@ -1,85 +1,67 @@
 package se.kth.soundgood.integration;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RentalDAO {
-    private Connection connection;
+    private final Connection connection;
 
-    public RentalDAO() throws SQLException {
-        connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/soundgooddb", "postgres", "postgres");
-        connection.setAutoCommit(false);
+    public RentalDAO(Connection connection) {
+        this.connection = connection;
     }
 
-    /**
-     * Retrieves active rentals for a student.
-     *
-     * @param studentId The ID of the student
-     * @return A ResultSet containing the active rentals for the student
-     * @throws SQLException If a database access error occurs
-     */
-    public ResultSet ReadStudentRentals(int studentId) throws SQLException {
-        String query = "SELECT * FROM instrument_rental WHERE student_id = ? AND end_date IS NULL FOR UPDATE";
-        PreparedStatement stmt = connection.prepareStatement(query);
+public int readActiveRentalCountForStudent(int studentId) throws SQLException {
+    String query = "SELECT instrument_id FROM instrument_rental WHERE student_id = ? AND end_date IS NULL FOR UPDATE";
+    try (PreparedStatement stmt = connection.prepareStatement(query)) { //try blocks in DAO classes = no need for close(), finally..
         stmt.setInt(1, studentId);
-        return stmt.executeQuery();
-    }
+        ResultSet rs = stmt.executeQuery();
 
-    /**
-     * Retrieves active rentals for an instrument.
-     *
-     * @param instrumentId The instrument ID
-     * @return A ResultSet containing the active rental for the instrument (if it exists)
-     * @throws SQLException If a database access error occurs
-     */
-    public ResultSet ReadInstrumentRental(int instrumentId) throws SQLException {
-        String query = "SELECT * FROM instrument_rental WHERE instrument_id = ? AND end_date IS NULL FOR UPDATE";
-        PreparedStatement stmt = connection.prepareStatement(query);
-        stmt.setInt(1, instrumentId);
-        return stmt.executeQuery();
+        int rentalCount = 0;
+        while (rs.next()) {
+            rentalCount++;
+        }
+        return rentalCount;
     }
+}
 
-    /**
-     * Inserts a new rental record for the specified student and instrument
-     *
-     * @param studentId Student ID of the one that's renting the instrument
-     * @param instrumentId Instrument ID of specified instrument
-     * @throws SQLException If a database access error occurs
-     */
-    public void CreateRental(int studentId, int instrumentId) throws SQLException {
-        String query = "INSERT INTO instrument_rental (student_id, instrument_id, start_date) VALUES (?, ?, CURRENT_DATE)";
+    public List<Integer> readActiveRentalsByStudent(int studentId) throws SQLException {
+        String query = "SELECT instrument_id FROM instrument_rental WHERE student_id = ? AND end_date IS NULL";
+        List<Integer> rentals = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, studentId);
-            stmt.setInt(2, instrumentId);
-            stmt.executeUpdate();
-            connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                rentals.add(rs.getInt("instrument_id"));
+            }
+        }
+        return rentals;
+    }
+
+    public boolean readInstrumentRentalStatus(int instrumentId) throws SQLException {
+        String query = "SELECT 1 FROM instrument_rental WHERE instrument_id = ? AND end_date IS NULL";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setInt(1, instrumentId);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next(); //will be true if the instrument is currently rented
         }
     }
 
-    /**
-     * Ends an active rental by setting the end date to the current date
-     *
-     * @param studentId ID of the student returning the instrument.
-     * @param instrumentId ID of the instrument being returned.
-     * @throws SQLException If no active rental is found or a database access error occurs.
-     */
-    public void UpdateRentalEnd(int studentId, int instrumentId) throws SQLException {
+    public void createRental(int studentId, int instrumentId) throws SQLException {
+        String query = "INSERT INTO instrument_rental (student_id, instrument_id, start_date) VALUES (?, ?, CURRENT_DATE)";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) { 
+            stmt.setInt(1, studentId);
+            stmt.setInt(2, instrumentId);
+            stmt.executeUpdate();
+        }
+    }
+
+    public int updateRentalEnd(int studentId, int instrumentId) throws SQLException {
         String query = "UPDATE instrument_rental SET end_date = CURRENT_DATE WHERE student_id = ? AND instrument_id = ? AND end_date IS NULL";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, studentId);
             stmt.setInt(2, instrumentId);
-            int rowsUpdated = stmt.executeUpdate();
-    
-            if (rowsUpdated == 0) {
-                throw new SQLException("No active rental found for the given student and instrument.");
-            }
-    
-            connection.commit();
-        } catch (SQLException e) {
-            connection.rollback();
-            throw e;
+            return stmt.executeUpdate();
         }
     }
 }

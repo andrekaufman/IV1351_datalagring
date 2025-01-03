@@ -4,62 +4,99 @@ import se.kth.soundgood.integration.InstrumentDAO;
 import se.kth.soundgood.integration.RentalDAO;
 import se.kth.soundgood.model.Instrument;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class RentalController {
+    private final Connection connection;
     private final InstrumentDAO instrumentDAO;
     private final RentalDAO rentalDAO;
 
     public RentalController() throws SQLException {
-        instrumentDAO = new InstrumentDAO();
-        rentalDAO = new RentalDAO();
+        connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/soundgooddb", "postgres", "postgres");
+        connection.setAutoCommit(false); 
+        instrumentDAO = new InstrumentDAO(connection);
+        rentalDAO = new RentalDAO(connection);
     }
 
-    public List<Instrument> listAvailableInstruments(String type) throws SQLException {
-        return instrumentDAO.ReadAvailableInstruments(type);
+    private void beginTransaction() throws SQLException {
+        connection.setAutoCommit(false);
     }
 
-    /**
-     * Handles the rental process by performing all necessary validations
-     * and inserting the rental record if valid.
-     *
-     * @param studentId    The ID of the student renting the instrument.
-     * @param instrumentId The ID of the instrument being rented.
-     * @throws SQLException If the rental quota is exceeded or the instrument is already rented.
-     */
+    private void commitTransaction() throws SQLException {
+        connection.commit();
+    }
+
+    private void rollbackTransaction() throws SQLException {
+        connection.rollback();
+    }
+
+public List<Instrument> listAvailableInstruments(String type) throws SQLException {
+    try { 
+        beginTransaction();
+        List<Instrument> instruments = instrumentDAO.readInstrumentsByType(type);
+        List<Instrument> availableInstruments = new ArrayList<>();
+
+        for (Instrument instrument : instruments) {
+            try (ResultSet rs = instrumentDAO.readInstrumentAvailability(instrument.getId())) {
+                if (rs.next() && rs.getBoolean("is_available")) {
+                    availableInstruments.add(instrument);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
+
+        commitTransaction();
+        return availableInstruments;
+    } catch (SQLException e) {
+        rollbackTransaction();
+        throw e;
+    }
+}
+
     public void rentInstrument(int studentId, int instrumentId) throws SQLException {
-        // Validate rental quota
-        ResultSet studentRentals = rentalDAO.ReadStudentRentals(studentId);
-        int rentalCount = 0;
-        while (studentRentals.next()) {
-            rentalCount++;
+        try { 
+            beginTransaction();
+    
+            //business logic such as rental quota limit and 12 month check are enforced by db triggers
+            
+            
+            try (ResultSet rs = instrumentDAO.readInstrumentAvailability(instrumentId)) { //(redundant, also a trigger)
+                if (!rs.next() || !rs.getBoolean("is_available")) {
+                    throw new SQLException("Instrument already rented.");
+                }
+            }
+    
+            rentalDAO.createRental(studentId, instrumentId);
+            instrumentDAO.updateInstrumentAvailability(instrumentId, false);
+    
+            commitTransaction();
+        } catch (SQLException e) { 
+            rollbackTransaction();
+            throw e;
         }
-        if (rentalCount >= 2) {
-            throw new SQLException("Rental limit exceeded. A student cannot rent more than 2 instruments.");
-        }
-
-        // Validate availability
-        ResultSet instrumentRental = rentalDAO.ReadInstrumentRental(instrumentId);
-        if (instrumentRental.next()) {
-            throw new SQLException("Instrument is already rented to another student.");
-        }
-
-        // Insert the rental record and update instrument availability
-        rentalDAO.CreateRental(studentId, instrumentId);
-        instrumentDAO.updateInstrumentAvailability(instrumentId, false);
     }
 
-    /**
-     * Handles the termination of a rental and updates the instrument's availability.
-     *
-     * @param studentId    The ID of the student ending the rental.
-     * @param instrumentId The ID of the instrument being returned.
-     * @throws SQLException If no active rental is found or a database access error occurs.
-     */
     public void terminateRental(int studentId, int instrumentId) throws SQLException {
-        rentalDAO.UpdateRentalEnd(studentId, instrumentId);
-        instrumentDAO.updateInstrumentAvailability(instrumentId, true);
+        try {
+            beginTransaction();
+    
+            int rowsUpdated = rentalDAO.updateRentalEnd(studentId, instrumentId);
+            if (rowsUpdated == 0) {
+                throw new SQLException("No active rental found for the given student and instrument.");
+            }
+    
+            instrumentDAO.updateInstrumentAvailability(instrumentId, true);
+    
+            commitTransaction();
+        } catch (SQLException e) {
+            rollbackTransaction();
+            throw e;
+        }
     }
 }
